@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     whatsapp_default_to: str = ""
 
     # â”€â”€ Setu Account Aggregator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    setu_client_id: str = "7ae0553f-f10f-475d-88ea-4a5f94ff3723"
-    setu_client_secret: str = "1qfpRYp0pgQFuRUhrsIOvBj6vku15Yc2"
+    setu_client_id: str = "7ae0553f-f10f-475d-88ea-4a5f94ff3723" # Playground, same for all
+    setu_client_secret: str = "1qfpRYp0pgQFuRUhrsIOvBj6vku15Yc2" # Playground, same for all
     setu_product_instance_id: str = "orgservice-prod"
 
     # â”€â”€ Model Routing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

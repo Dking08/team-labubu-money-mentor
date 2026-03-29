@@ -150,10 +150,10 @@ export default function HealthScorePage() {
   const dimensions = [
     { key: "emergency", label: "Emergency Preparedness", color: "#f59e0b" },
     { key: "insurance", label: "Insurance Coverage", color: "#ef4444" },
-    { key: "investment", label: "Investment Diversification", color: "#06b6d4" },
+    { key: "investment", label: "Investment Diversification", color: "#3b82f6" },
     { key: "debt", label: "Debt Health", color: "#10b981" },
-    { key: "tax", label: "Tax Efficiency", color: "#8b5cf6" },
-    { key: "retirement", label: "Retirement Readiness", color: "#ec4899" },
+    { key: "tax", label: "Tax Efficiency", color: "#a855f7" },
+    { key: "retirement", label: "Retirement Readiness", color: "#f97316" },
   ];
 
   const ScoreRing = ({ score, size = 180 }: { score: number; size?: number }) => {
@@ -165,7 +165,7 @@ export default function HealthScorePage() {
         <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
           <defs>
             <linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#06b6d4" /><stop offset="50%" stopColor="#8b5cf6" /><stop offset="100%" stopColor="#ec4899" />
+              <stop offset="0%" stopColor="#fbbf24" /><stop offset="50%" stopColor="#f59e0b" /><stop offset="100%" stopColor="#ef4444" />
             </linearGradient>
           </defs>
           <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
@@ -175,7 +175,7 @@ export default function HealthScorePage() {
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <span style={{ fontFamily: "'Space Grotesk'", fontSize: size*0.25, fontWeight: 700,
-            background: "linear-gradient(135deg,#06b6d4,#8b5cf6,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{score}</span>
+            background: "linear-gradient(135deg,#fbbf24,#f59e0b,#ef4444)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{score}</span>
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>out of 100</span>
         </div>
       </div>

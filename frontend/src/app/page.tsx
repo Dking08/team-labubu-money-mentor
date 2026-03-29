@@ -40,9 +40,9 @@ function ScoreRing({ score }: { score: number }) {
         <svg width="140" height="140" viewBox="0 0 140 140">
           <defs>
             <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#06b6d4" />
-              <stop offset="50%" stopColor="#8b5cf6" />
-              <stop offset="100%" stopColor="#ec4899" />
+              <stop offset="0%" stopColor="#fbbf24" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#ef4444" />
             </linearGradient>
           </defs>
           <circle className="score-ring-bg" cx="70" cy="70" r={radius} />

@@ -4,6 +4,8 @@ import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
+import AIResponse from "@/components/AIResponse";
+import FileUpload from "@/components/FileUpload";
 import { callAgent } from "@/lib/api";
 
 export default function FirePlannerPage() {
@@ -18,11 +20,10 @@ export default function FirePlannerPage() {
   const runPlan = async () => {
     setLoading(true);
     try {
-      const res = await callAgent("fire", `FIRE plan: age ${form.age}, retire ${form.retire_age}, income ₹${form.income}, expenses ₹${form.expenses}, savings ₹${form.savings}`);
+      const res = await callAgent("fire", `FIRE plan: age ${form.age}, retire ${form.retire_age}, income Rs ${form.income}, expenses Rs ${form.expenses}, savings Rs ${form.savings}`);
       setResult(res.data);
       setAdvice(res.response_text);
     } catch {
-      // Fallback with local calc
       const fn = form.expenses * 25;
       const r = 0.12 / 12;
       let months = 0;
@@ -49,7 +50,7 @@ export default function FirePlannerPage() {
     }
   };
 
-  const formatLakh = (n: number) => n >= 10000000 ? `₹${(n / 10000000).toFixed(1)}Cr` : `₹${(n / 100000).toFixed(1)}L`;
+  const formatLakh = (n: number) => n >= 10000000 ? `Rs ${(n / 10000000).toFixed(1)}Cr` : `Rs ${(n / 100000).toFixed(1)}L`;
 
   return (
     <div className="app-shell">
@@ -57,21 +58,20 @@ export default function FirePlannerPage() {
       <TopBar />
       <main className="main-content">
         <div className="page-header">
-          <h1>🔥 FIRE Path Planner</h1>
+          <h1>FIRE Path Planner</h1>
           <p>Your roadmap to Financial Independence, Retire Early</p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 24, alignItems: "start" }}>
-          {/* Form */}
           <div className="glass-card">
             <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>Your Details</h3>
             {[
               { label: "Current Age", key: "age", min: 18, max: 65 },
               { label: "Target Retirement Age", key: "retire_age", min: 30, max: 70 },
-              { label: "Annual Income (₹)", key: "income" },
-              { label: "Annual Expenses (₹)", key: "expenses" },
-              { label: "Current Savings (₹)", key: "savings" },
-              { label: "Monthly Investment (₹)", key: "monthly_invest" },
+              { label: "Annual Income (Rs)", key: "income" },
+              { label: "Annual Expenses (Rs)", key: "expenses" },
+              { label: "Current Savings (Rs)", key: "savings" },
+              { label: "Monthly Investment (Rs)", key: "monthly_invest" },
             ].map(({ label, key, min, max }) => (
               <div className="form-group" key={key}>
                 <label className="form-label">{label}</label>
@@ -81,20 +81,18 @@ export default function FirePlannerPage() {
               </div>
             ))}
             <button className="btn-gradient" onClick={runPlan} disabled={loading} style={{ width: "100%" }}>
-              {loading ? "🧠 Calculating..." : "Generate FIRE Plan →"}
+              {loading ? "Calculating..." : "Generate FIRE Plan"}
             </button>
           </div>
 
-          {/* Results */}
           <div>
             {result && (
               <>
-                {/* FIRE Numbers */}
                 <div className="dashboard-grid" style={{ marginTop: 0 }}>
                   {[
-                    { label: "🔥 FIRE Number", value: result.roadmap?.fire_number },
-                    { label: "🏖️ Lean FIRE", value: result.roadmap?.lean_fire },
-                    { label: "💎 Fat FIRE", value: result.roadmap?.fat_fire },
+                    { label: "FIRE Number", value: result.roadmap?.fire_number },
+                    { label: "Lean FIRE", value: result.roadmap?.lean_fire },
+                    { label: "Fat FIRE", value: result.roadmap?.fat_fire },
                   ].map((s) => (
                     <div className="glass-card stat-card" key={s.label}>
                       <div className="stat-label">{s.label}</div>
@@ -105,21 +103,20 @@ export default function FirePlannerPage() {
 
                 <div className="dashboard-grid" style={{ marginTop: 16 }}>
                   <div className="glass-card stat-card">
-                    <div className="stat-label">⏱️ Years to FIRE</div>
+                    <div className="stat-label">Years to FIRE</div>
                     <div className="stat-value">{result.roadmap?.years_to_fire} yrs</div>
                     <div className="stat-change positive">FIRE Age: {Math.round(result.roadmap?.fire_age || 0)}</div>
                   </div>
                   <div className="glass-card stat-card">
-                    <div className="stat-label">💰 Savings Rate</div>
+                    <div className="stat-label">Savings Rate</div>
                     <div className="stat-value">{result.roadmap?.savings_rate}%</div>
-                    <div className="stat-change positive">Excellent!</div>
+                    <div className="stat-change positive">Excellent</div>
                   </div>
                 </div>
 
-                {/* Timeline */}
                 {result.roadmap?.milestones && (
                   <div className="glass-card" style={{ marginTop: 24 }}>
-                    <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>📅 FIRE Timeline</h3>
+                    <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>FIRE Timeline</h3>
                     <div style={{ maxHeight: 300, overflowY: "auto" }}>
                       {result.roadmap.milestones.slice(0, 15).map((m: any) => (
                         <div key={m.year} style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 0", borderBottom: "1px solid var(--border-subtle)" }}>
@@ -143,13 +140,17 @@ export default function FirePlannerPage() {
                   </div>
                 )}
 
-                {/* AI Advice */}
                 {advice && (
                   <div className="glass-card" style={{ marginTop: 24 }}>
-                    <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>🤖 AI Roadmap Analysis</h3>
-                    <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>{advice}</div>
+                    <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>AI Roadmap Analysis</h3>
+                    <AIResponse text={advice} />
                   </div>
                 )}
+
+                <div className="glass-card" style={{ marginTop: 24 }}>
+                  <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>Upload Financial Documents</h3>
+                  <FileUpload agentHint="fire" compact />
+                </div>
               </>
             )}
           </div>

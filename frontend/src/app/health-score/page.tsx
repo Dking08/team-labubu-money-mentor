@@ -4,13 +4,15 @@ import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
+import AIResponse from "@/components/AIResponse";
+import FileUpload from "@/components/FileUpload";
 import { callAgent } from "@/lib/api";
 
 export default function HealthScorePage() {
   const [scores, setScores] = useState<any>(null);
   const [aiAdvice, setAiAdvice] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(0); // 0=form, 1=result
+  const [step, setStep] = useState(0);
 
   const [formData, setFormData] = useState({
     age: 28, income: 1500000, expenses: 45000,
@@ -22,7 +24,7 @@ export default function HealthScorePage() {
   const runCheck = async () => {
     setLoading(true);
     try {
-      const result = await callAgent("health-score", `Assess financial health for a ${formData.age} year old earning ₹${formData.income}`);
+      const result = await callAgent("health-score", `Assess financial health for a ${formData.age} year old earning Rs ${formData.income}`);
       setScores(result.data);
       setAiAdvice(result.response_text);
       setStep(1);
@@ -46,12 +48,12 @@ export default function HealthScorePage() {
   };
 
   const dimensions = [
-    { key: "emergency", icon: "🛡️", label: "Emergency Preparedness", color: "#f59e0b" },
-    { key: "insurance", icon: "🏥", label: "Insurance Coverage", color: "#ef4444" },
-    { key: "investment", icon: "📈", label: "Investment Diversification", color: "#06b6d4" },
-    { key: "debt", icon: "💳", label: "Debt Health", color: "#10b981" },
-    { key: "tax", icon: "🧾", label: "Tax Efficiency", color: "#8b5cf6" },
-    { key: "retirement", icon: "🏖️", label: "Retirement Readiness", color: "#ec4899" },
+    { key: "emergency", label: "Emergency Preparedness", color: "#f59e0b" },
+    { key: "insurance", label: "Insurance Coverage", color: "#ef4444" },
+    { key: "investment", label: "Investment Diversification", color: "#06b6d4" },
+    { key: "debt", label: "Debt Health", color: "#10b981" },
+    { key: "tax", label: "Tax Efficiency", color: "#8b5cf6" },
+    { key: "retirement", label: "Retirement Readiness", color: "#ec4899" },
   ];
 
   const ScoreRing = ({ score, size = 180 }: { score: number; size?: number }) => {
@@ -86,7 +88,7 @@ export default function HealthScorePage() {
       <TopBar />
       <main className="main-content">
         <div className="page-header">
-          <h1>💯 Money Health Score</h1>
+          <h1>Money Health Score</h1>
           <p>5-minute financial wellness check across 6 dimensions</p>
         </div>
 
@@ -94,12 +96,12 @@ export default function HealthScorePage() {
           <div className="glass-card" style={{ maxWidth: 600 }}>
             <h3 style={{ fontSize: 18, marginBottom: 24, color: "var(--text-primary)" }}>Quick Financial Check</h3>
             <div className="form-group"><label className="form-label">Age</label><input className="form-input" type="number" value={formData.age} onChange={e => setFormData({...formData, age: +e.target.value})} /></div>
-            <div className="form-group"><label className="form-label">Annual Income (₹)</label><input className="form-input" type="number" value={formData.income} onChange={e => setFormData({...formData, income: +e.target.value})} /></div>
-            <div className="form-group"><label className="form-label">Monthly Expenses (₹)</label><input className="form-input" type="number" value={formData.expenses} onChange={e => setFormData({...formData, expenses: +e.target.value})} /></div>
-            <div className="form-group"><label className="form-label">Emergency Fund (₹)</label><input className="form-input" type="number" value={formData.emergency_fund} onChange={e => setFormData({...formData, emergency_fund: +e.target.value})} /></div>
-            <div className="form-group"><label className="form-label">Total Investments (₹)</label><input className="form-input" type="number" value={formData.investments} onChange={e => setFormData({...formData, investments: +e.target.value})} /></div>
+            <div className="form-group"><label className="form-label">Annual Income (Rs)</label><input className="form-input" type="number" value={formData.income} onChange={e => setFormData({...formData, income: +e.target.value})} /></div>
+            <div className="form-group"><label className="form-label">Monthly Expenses (Rs)</label><input className="form-input" type="number" value={formData.expenses} onChange={e => setFormData({...formData, expenses: +e.target.value})} /></div>
+            <div className="form-group"><label className="form-label">Emergency Fund (Rs)</label><input className="form-input" type="number" value={formData.emergency_fund} onChange={e => setFormData({...formData, emergency_fund: +e.target.value})} /></div>
+            <div className="form-group"><label className="form-label">Total Investments (Rs)</label><input className="form-input" type="number" value={formData.investments} onChange={e => setFormData({...formData, investments: +e.target.value})} /></div>
             <button className="btn-gradient" onClick={runCheck} disabled={loading} style={{ width: "100%", marginTop: 8 }}>
-              {loading ? "🧠 Analyzing..." : "Get My Health Score →"}
+              {loading ? "Analyzing..." : "Get My Health Score"}
             </button>
           </div>
         ) : (
@@ -115,7 +117,9 @@ export default function HealthScorePage() {
                 const d = scores?.dimensions?.[dim.key] || { score: 50, status: "Good" };
                 return (
                   <div className="glass-card dimension-card" key={dim.key}>
-                    <div className="dimension-icon" style={{ background: `${dim.color}22`, color: dim.color }}>{dim.icon}</div>
+                    <div className="dimension-icon" style={{ background: `${dim.color}22`, color: dim.color }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
                     <div className="dimension-info">
                       <div className="dimension-name">{dim.label}</div>
                       <div className={`dimension-status ${d.status?.toLowerCase().replace(" ", "-")}`}>{d.status}</div>
@@ -127,11 +131,15 @@ export default function HealthScorePage() {
             </div>
             {aiAdvice && (
               <div className="glass-card" style={{ marginTop: 24 }}>
-                <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>🤖 AI Recommendations</h3>
-                <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>{aiAdvice}</div>
+                <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>AI Recommendations</h3>
+                <AIResponse text={aiAdvice} />
               </div>
             )}
-            <button className="btn-ghost" onClick={() => setStep(0)} style={{ marginTop: 16 }}>← Retake Assessment</button>
+            <div className="glass-card" style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>Upload Insurance / Health Documents</h3>
+              <FileUpload agentHint="health-score" compact />
+            </div>
+            <button className="btn-ghost" onClick={() => setStep(0)} style={{ marginTop: 16 }}>Retake Assessment</button>
           </>
         )}
       </main>

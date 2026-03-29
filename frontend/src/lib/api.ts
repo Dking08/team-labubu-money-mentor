@@ -46,6 +46,31 @@ export async function sendWhatsAppSummary(summary: string) {
   return res.json();
 }
 
+export async function uploadFile(file: File, agentHint?: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (agentHint) formData.append("agent_hint", agentHint);
+  const res = await fetch(`${API_BASE}/api/upload/`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Upload failed");
+  return res.json();
+}
+
+export async function uploadAndAnalyze(file: File, agentHint?: string, query?: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (agentHint) formData.append("agent_hint", agentHint);
+  if (query) formData.append("query", query);
+  const res = await fetch(`${API_BASE}/api/upload/parse-and-analyze`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Upload and analyze failed");
+  return res.json();
+}
+
 export function getWebSocketUrl() {
   const wsBase = API_BASE.replace("http", "ws");
   return `${wsBase}/api/voice/ws`;

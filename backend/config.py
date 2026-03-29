@@ -19,11 +19,16 @@ class Settings(BaseSettings):
     # â”€â”€ Twilio (WhatsApp) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     twilio_account_sid: str = "placeholder"
     twilio_auth_token: str = "placeholder"
-    twilio_whatsapp_from: str = "placeholder"
-    twilio_whatsapp_to: str = "whatsapp:+911234567890"
+    # twilio_whatsapp_from: str = "placeholder"
+    # twilio_whatsapp_to: str = "whatsapp:+911234567890"
+
+    # â”€â”€ Setu Account Aggregator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    setu_client_id: str = "7ae0553f-f10f-475d-88ea-4a5f94ff3723"
+    setu_client_secret: str = "1qfpRYp0pgQFuRUhrsIOvBj6vku15Yc2"
+    setu_product_instance_id: str = "orgservice-prod"
 
     # â”€â”€ Model Routing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    orchestrator_model: str = "llama-3.3-70b-specdec"
+    orchestrator_model: str = "openai/gpt-oss-120b"
     agent_model: str = "llama-3.3-70b-versatile"
     fast_model: str = "llama-3.1-8b-instant"
     gemini_model: str = "gemini-3.1-flash-lite-preview"

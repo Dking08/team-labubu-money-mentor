@@ -23,10 +23,10 @@ def _get_memory():
             },
         }
         _memory = Memory.from_config(config)
-        print("✅ Mem0 initialized with Groq backend")
+        print("[OK] Mem0 initialized with Groq backend")
         return _memory
     except Exception as e:
-        print(f"⚠️ Mem0 init failed ({e}), using fallback memory")
+        print(f"[WARN] Mem0 init failed ({e}), using fallback memory")
         return None
 
 

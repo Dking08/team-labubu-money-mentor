@@ -4,6 +4,8 @@ import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
+import AIResponse from "@/components/AIResponse";
+import FileUpload from "@/components/FileUpload";
 import { callAgent } from "@/lib/api";
 
 export default function TaxWizardPage() {
@@ -19,15 +21,14 @@ export default function TaxWizardPage() {
   const runTax = async () => {
     setLoading(true);
     try {
-      const res = await callAgent("tax-wizard", `Optimize taxes for income ₹${form.income} with PPF ₹${form.ppf}, ELSS ₹${form.elss}`);
+      const res = await callAgent("tax-wizard", `Optimize taxes for income Rs ${form.income} with PPF Rs ${form.ppf}, ELSS Rs ${form.elss}`);
       setResult(res.data);
       setAdvice(res.response_text);
     } catch {
-      // Local fallback
       const income = form.income;
       const newTaxable = income - 75000;
       let newTax = 0;
-      const newSlabs = [[300000,0],[700000,0.05],[1000000,0.10],[1200000,0.15],[1500000,0.20],[Infinity,0.30]];
+      const newSlabs: [number, number][] = [[300000,0],[700000,0.05],[1000000,0.10],[1200000,0.15],[1500000,0.20],[Infinity,0.30]];
       let prev = 0;
       for (const [limit, rate] of newSlabs) {
         const t = Math.min(newTaxable, limit) - prev;
@@ -42,7 +43,7 @@ export default function TaxWizardPage() {
       const oldDeductions = 50000 + sec80c + Math.min(form.nps, 50000) + Math.min(form.health_insurance, 25000);
       const oldTaxable = Math.max(0, income - oldDeductions);
       let oldTax = 0;
-      const oldSlabs = [[250000,0],[500000,0.05],[1000000,0.20],[Infinity,0.30]];
+      const oldSlabs: [number, number][] = [[250000,0],[500000,0.05],[1000000,0.20],[Infinity,0.30]];
       prev = 0;
       for (const [limit, rate] of oldSlabs) {
         const t = Math.min(oldTaxable, limit) - prev;
@@ -61,7 +62,7 @@ export default function TaxWizardPage() {
           savings: Math.abs(Math.round(oldTax - newTax)),
         },
         missed_deductions: form.nps === 0
-          ? [{ section: "80CCD(1B)", max_benefit: 50000, suggestion: "Invest ₹50,000 in NPS" }]
+          ? [{ section: "80CCD(1B)", max_benefit: 50000, suggestion: "Invest Rs 50,000 in NPS for additional deduction under Old Regime." }]
           : [],
       });
       setAdvice("Connect backend on port 8000 for personalized AI recommendations.");
@@ -70,7 +71,7 @@ export default function TaxWizardPage() {
     }
   };
 
-  const formatINR = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+  const formatINR = (n: number) => `Rs ${n.toLocaleString("en-IN")}`;
 
   return (
     <div className="app-shell">
@@ -78,13 +79,13 @@ export default function TaxWizardPage() {
       <TopBar />
       <main className="main-content">
         <div className="page-header">
-          <h1>🧾 Tax Wizard</h1>
+          <h1>Tax Wizard</h1>
           <p>Old vs New regime comparison with missed deduction detection</p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 24, alignItems: "start" }}>
           <div className="glass-card">
-            <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>Salary & Deductions</h3>
+            <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>Salary and Deductions</h3>
             {[
               { label: "Gross Annual Income", key: "income" },
               { label: "PPF Contribution", key: "ppf" },
@@ -96,19 +97,18 @@ export default function TaxWizardPage() {
               { label: "Home Loan Interest", key: "home_loan" },
             ].map(({ label, key }) => (
               <div className="form-group" key={key}>
-                <label className="form-label">{label} (₹)</label>
+                <label className="form-label">{label} (Rs)</label>
                 <input className="form-input" type="number" value={(form as any)[key]}
                   onChange={(e) => setForm({ ...form, [key]: +e.target.value })} />
               </div>
             ))}
             <button className="btn-gradient" onClick={runTax} disabled={loading} style={{ width: "100%" }}>
-              {loading ? "🧠 Calculating..." : "Compare Regimes →"}
+              {loading ? "Calculating..." : "Compare Regimes"}
             </button>
           </div>
 
           {result && (
             <div>
-              {/* Regime Comparison */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 {["old", "new"].map((regime) => {
                   const data = result.comparison?.[`${regime}_regime`];
@@ -123,10 +123,10 @@ export default function TaxWizardPage() {
                           position: "absolute", top: -10, right: 16, padding: "2px 12px",
                           background: "var(--gradient-green)", borderRadius: "var(--radius-full)",
                           fontSize: 11, fontWeight: 700, color: "white",
-                        }}>✓ RECOMMENDED</div>
+                        }}>RECOMMENDED</div>
                       )}
                       <h3 style={{ fontSize: 18, marginBottom: 16, color: "var(--text-primary)", textTransform: "capitalize" }}>
-                        {regime === "old" ? "🏛️" : "🆕"} {regime} Regime
+                        {regime === "old" ? "Old" : "New"} Regime
                       </h3>
                       <div style={{ marginBottom: 12 }}>
                         <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Tax Payable</div>
@@ -143,16 +143,14 @@ export default function TaxWizardPage() {
                 })}
               </div>
 
-              {/* Savings */}
               <div className="glass-card stat-card" style={{ marginTop: 16, textAlign: "center" }}>
-                <div className="stat-label">💰 Your Tax Savings by choosing {result.comparison?.recommended} regime</div>
+                <div className="stat-label">Tax Savings by choosing {result.comparison?.recommended} regime</div>
                 <div className="stat-value">{formatINR(result.comparison?.savings || 0)}</div>
               </div>
 
-              {/* Missed Deductions */}
               {result.missed_deductions?.length > 0 && (
                 <div className="glass-card" style={{ marginTop: 16 }}>
-                  <h3 style={{ fontSize: 16, marginBottom: 12, color: "#fbbf24" }}>⚠️ Missed Deductions</h3>
+                  <h3 style={{ fontSize: 16, marginBottom: 12, color: "#fbbf24" }}>Missed Deductions</h3>
                   {result.missed_deductions.map((d: any, i: number) => (
                     <div key={i} style={{ padding: "12px 0", borderBottom: "1px solid var(--border-subtle)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -167,10 +165,15 @@ export default function TaxWizardPage() {
 
               {advice && (
                 <div className="glass-card" style={{ marginTop: 16 }}>
-                  <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>🤖 AI Tax Strategy</h3>
-                  <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>{advice}</div>
+                  <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>AI Tax Strategy</h3>
+                  <AIResponse text={advice} />
                 </div>
               )}
+
+              <div className="glass-card" style={{ marginTop: 16 }}>
+                <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>Upload Tax Documents</h3>
+                <FileUpload agentHint="tax-wizard" compact />
+              </div>
             </div>
           )}
         </div>

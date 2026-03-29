@@ -14,3 +14,4 @@ python-multipart
 websockets
 numpy
 scipy
+pywhatkit

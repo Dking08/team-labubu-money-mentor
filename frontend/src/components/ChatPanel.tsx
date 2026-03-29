@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { chatWithMentor } from "@/lib/api";
+import AIResponse from "./AIResponse";
 
 interface Message {
   id: string;
@@ -12,13 +13,24 @@ interface Message {
   uiAction?: any;
 }
 
+const AGENT_LABELS: Record<string, string> = {
+  fire_planner: "FIRE Planner",
+  money_health: "Health Score",
+  tax_wizard: "Tax Wizard",
+  life_event: "Life Event Advisor",
+  mf_xray: "MF X-Ray",
+  couple_planner: "Couple Planner",
+  mentor: "Money Mentor",
+  system: "System",
+};
+
 export default function ChatPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "ai",
-      text: "Hey Rahul! 👋 I'm your AI Money Mentor. Ask me anything about your finances — taxes, investments, goals, or that bonus you just got!",
+      text: "Hello Rahul. I am your ET Money Mentor. Ask me anything about your finances — taxes, investments, goals, or how to allocate that bonus.",
       agentName: "mentor",
     },
   ]);
@@ -52,18 +64,13 @@ export default function ChatPanel() {
         uiAction: result.ui_action,
       };
       setMessages((prev) => [...prev, aiMsg]);
-
-      // Handle UI action from agent
-      if (result.ui_action?.action === "navigate" && result.ui_action?.page) {
-        // Could trigger navigation here
-      }
     } catch {
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "ai",
-          text: "Sorry, I encountered an error. Please make sure the backend is running on port 8000.",
+          text: "Connection error. Please ensure the backend is running on port 8000.",
           agentName: "system",
         },
       ]);
@@ -80,18 +87,22 @@ export default function ChatPanel() {
         id="chat-fab"
         aria-label="Toggle chat"
       >
-        {isOpen ? "✕" : "💬"}
+        {isOpen ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        ) : (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        )}
       </button>
 
       {isOpen && (
         <div className="chat-panel" id="chat-panel">
           <div className="chat-header">
-            <h3>🧠 AI Money Mentor</h3>
+            <h3>ET Money Mentor</h3>
             <button
               onClick={() => setIsOpen(false)}
               style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 18 }}
             >
-              ✕
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
 
@@ -100,10 +111,14 @@ export default function ChatPanel() {
               <div key={msg.id} className={`message ${msg.role}`}>
                 {msg.role === "ai" && msg.agentName && (
                   <div className="agent-tag">
-                    {agentEmoji(msg.agentName)} {msg.agentName.replace("_", " ")}
+                    {AGENT_LABELS[msg.agentName] || msg.agentName.replace("_", " ")}
                   </div>
                 )}
-                <div style={{ whiteSpace: "pre-wrap" }}>{msg.text}</div>
+                {msg.role === "ai" ? (
+                  <AIResponse text={msg.text} blocks={msg.data?.ui_blocks} />
+                ) : (
+                  <div>{msg.text}</div>
+                )}
               </div>
             ))}
             {isLoading && (
@@ -127,25 +142,11 @@ export default function ChatPanel() {
               disabled={isLoading}
             />
             <button className="chat-send" onClick={sendMessage} disabled={isLoading} id="chat-send">
-              →
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
         </div>
       )}
     </>
   );
-}
-
-function agentEmoji(name: string): string {
-  const map: Record<string, string> = {
-    fire_planner: "🔥",
-    money_health: "💯",
-    tax_wizard: "🧾",
-    life_event: "💍",
-    mf_xray: "📊",
-    couple_planner: "👫",
-    mentor: "🧠",
-    system: "⚠️",
-  };
-  return map[name] || "🤖";
 }

@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Money Mentor
 
-## Getting Started
+**AI-powered personal finance mentor** — multi-agent system with voice meetings, WhatsApp alerts, and premium UI.
 
-First, run the development server:
+Built for the **ET GenAI Hackathon 2026** by Team Labubu.
+
+---
+
+## Quick Start
+
+### 1. Backend (FastAPI + LangGraph)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd backend
+
+# Create virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Setup environment
+copy .env.example .env
+# Edit .env with your actual API keys
+
+# Run the server
+uvicorn main:app --reload --port 8000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Frontend (Next.js)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd frontend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Install dependencies (already done if you ran the setup)
+npm install
 
-## Learn More
+# Run dev server
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+**Open**: [http://localhost:3000](http://localhost:3000)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Keys Required
 
-## Deploy on Vercel
+| Service | Purpose | Get it at |
+|---------|---------|-----------|
+| Groq | LLM inference (Llama 3.3) + Whisper STT | [console.groq.com](https://console.groq.com) |
+| Google AI | Gemini Flash (PDF/doc parsing) | [aistudio.google.com](https://aistudio.google.com) |
+| Twilio | WhatsApp sandbox | [twilio.com](https://www.twilio.com) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+All free tier / free credits.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Architecture
+
+```
+User (Web / Voice / WhatsApp)
+         |
+    FastAPI Gateway
+         |
+  LangGraph Orchestrator (Groq llama-3.3-70b-specdec)
+         |
+   +-----+-----+-----+-----+-----+-----+
+   |     |     |     |     |     |     |
+  FIRE  Health  Tax  Life  MF   Couple
+ Plan   Score  Wizard Event X-Ray Plan
+   |     |     |     |     |     |     |
+  Groq  Groq  Groq  Groq  Gemini Groq
+         |
+       Mem0 Memory Layer
+```
+
+## Features
+
+- **FIRE Planner** — Month-by-month financial independence roadmap
+- **Money Health Score** — 6-dimension financial wellness assessment
+- **Tax Wizard** — Old vs New regime with missed deductions
+- **Life Event Advisor** — Bonus, marriage, baby financial planning
+- **MF X-Ray** — Portfolio overlap, expense ratio, rebalancing
+- **Couple Planner** — Joint income optimization
+- **Voice AI Meeting** — Talk to your financial mentor
+- **WhatsApp Alerts** — Get summaries and reminders
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16, TypeScript, Vanilla CSS |
+| Backend | FastAPI, LangGraph, Python |
+| LLMs | Groq (Llama 3.3 70B), Google Gemini Flash |
+| Memory | Mem0 |
+| Voice | Groq Whisper STT + Browser TTS |
+| WhatsApp | Twilio Sandbox |
+
+---
+
+**Demo flow**: User joins voice meeting -> Says "I got a 2 lakh bonus" -> AI responds with tax breakdown + SIP allocation -> UI shows Life Event Advisor -> WhatsApp summary sent.

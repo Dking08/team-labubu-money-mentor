@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+langchain-groq
+langchain-core
+langchain-google-genai
+langgraph
+mem0ai
+pydantic>=2.0
+pydantic-settings
+python-dotenv
+twilio
+httpx
+python-multipart
+websockets
+numpy
+scipy

@@ -5,6 +5,13 @@ import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
 import Link from "next/link";
+import { useFinancialProfile } from "@/components/ProfileProvider";
+import {
+  formatInr,
+  getInvestmentLabel,
+  getNetWorth,
+  getPortfolioValue,
+} from "@/lib/financial-profile";
 
 function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) {
   const [display, setDisplay] = useState(0);
@@ -55,21 +62,6 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-const USER_DATA = {
-  name: "Rahul Sharma",
-  netWorth: 950000,
-  monthlyIncome: 104000,
-  monthlySavings: 51000,
-  healthScore: 62,
-  investments: { PPF: 300000, ELSS: 200000, "Equity MF": 150000, FD: 100000, EPF: 450000, Stocks: 50000 },
-  goals: [
-    { name: "Emergency Fund", target: 540000, current: 200000 },
-    { name: "Marriage", target: 2000000, current: 0 },
-    { name: "House Down Payment", target: 3000000, current: 0 },
-    { name: "Retirement", target: 50000000, current: 450000 },
-  ],
-};
-
 const QUICK_ACTIONS = [
   { label: "Start AI Meeting", href: "/mentor" },
   { label: "FIRE Calculator", href: "/fire-planner" },
@@ -80,6 +72,13 @@ const QUICK_ACTIONS = [
 ];
 
 export default function Dashboard() {
+  const { profile } = useFinancialProfile();
+  const portfolioValue = getPortfolioValue(profile);
+  const netWorth = getNetWorth(profile);
+  const savingsRate = profile.monthly_take_home
+    ? Math.round((profile.monthly_savings / profile.monthly_take_home) * 100)
+    : 0;
+
   return (
     <div className="app-shell">
       <Sidebar />
@@ -93,18 +92,18 @@ export default function Dashboard() {
         <div className="dashboard-grid animate-in stagger-2">
           <div className="glass-card stat-card">
             <div className="stat-label">Net Worth</div>
-            <div className="stat-value"><AnimatedNumber value={USER_DATA.netWorth} prefix="₹" /></div>
-            <div className="stat-change positive">+12.4% from last year</div>
+            <div className="stat-value"><AnimatedNumber value={netWorth} prefix="₹" /></div>
+            <div className="stat-change positive">Setu-linked cash included</div>
           </div>
           <div className="glass-card stat-card">
             <div className="stat-label">Monthly Income</div>
-            <div className="stat-value"><AnimatedNumber value={USER_DATA.monthlyIncome} prefix="₹" /></div>
-            <div className="stat-change positive">Savings rate: 49%</div>
+            <div className="stat-value"><AnimatedNumber value={profile.monthly_take_home} prefix="₹" /></div>
+            <div className="stat-change positive">Savings rate: {savingsRate}%</div>
           </div>
           <div className="glass-card stat-card">
             <div className="stat-label">Monthly Savings</div>
-            <div className="stat-value"><AnimatedNumber value={USER_DATA.monthlySavings} prefix="₹" /></div>
-            <div className="stat-change positive">Rs 8K EMI deducted</div>
+            <div className="stat-value"><AnimatedNumber value={profile.monthly_savings} prefix="₹" /></div>
+            <div className="stat-change positive">Cash balance: {formatInr(profile.cash_balance)}</div>
           </div>
         </div>
 
@@ -113,14 +112,14 @@ export default function Dashboard() {
             <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>
               Financial Goals
             </h3>
-            {USER_DATA.goals.map((goal) => {
-              const pct = Math.min(100, (goal.current / goal.target) * 100);
+            {profile.goals.map((goal) => {
+              const pct = Math.min(100, (goal.current_savings / goal.target) * 100);
               return (
                 <div className="goal-item" key={goal.name}>
                   <div className="goal-header">
                     <span className="goal-name">{goal.name}</span>
                     <span className="goal-amount">
-                      Rs {(goal.current / 100000).toFixed(1)}L / Rs {(goal.target / 100000).toFixed(1)}L
+                      Rs {(goal.current_savings / 100000).toFixed(1)}L / Rs {(goal.target / 100000).toFixed(1)}L
                     </span>
                   </div>
                   <div className="goal-bar">
@@ -135,7 +134,7 @@ export default function Dashboard() {
             <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>
               Money Health Score
             </h3>
-            <ScoreRing score={USER_DATA.healthScore} />
+            <ScoreRing score={profile.health_score} />
             <Link href="/health-score" className="btn-gradient" style={{ marginTop: 20, fontSize: 13, padding: "8px 20px" }}>
               View Detailed Report
             </Link>
@@ -144,11 +143,11 @@ export default function Dashboard() {
 
         <div className="glass-card animate-in stagger-4" style={{ marginTop: 24 }}>
           <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>
-            Investment Portfolio — Rs {(Object.values(USER_DATA.investments).reduce((a, b) => a + b, 0) / 100000).toFixed(1)}L
+            Investment Portfolio — Rs {(portfolioValue / 100000).toFixed(1)}L
           </h3>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            {Object.entries(USER_DATA.investments).map(([name, value]) => {
-              const total = Object.values(USER_DATA.investments).reduce((a, b) => a + b, 0);
+            {Object.entries(profile.investments).map(([name, value]) => {
+              const total = Object.values(profile.investments).reduce((a, b) => a + b, 0);
               const pct = ((value / total) * 100).toFixed(0);
               return (
                 <div key={name} style={{
@@ -156,7 +155,7 @@ export default function Dashboard() {
                   borderRadius: "var(--radius-md)", background: "var(--bg-glass-strong)",
                   border: "1px solid var(--border-subtle)",
                 }}>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{name}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{getInvestmentLabel(name)}</div>
                   <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 18, color: "var(--text-primary)" }}>
                     Rs {(value / 1000).toFixed(0)}K
                   </div>
@@ -166,6 +165,43 @@ export default function Dashboard() {
             })}
           </div>
         </div>
+
+        {profile.linked_accounts.length > 0 && (
+          <div className="glass-card animate-in stagger-4" style={{ marginTop: 24 }}>
+            <h3 style={{ fontSize: 16, marginBottom: 8, color: "var(--text-primary)" }}>
+              Linked via Setu AA
+            </h3>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16 }}>
+              Last synced {profile.last_synced_at ? new Date(profile.last_synced_at).toLocaleString("en-IN") : "recently"}
+            </p>
+            <div style={{ display: "grid", gap: 12 }}>
+              {profile.linked_accounts.map((account) => (
+                <div
+                  key={`${account.provider}-${account.number}`}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "14px 16px",
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--bg-glass-strong)",
+                    border: "1px solid var(--border-subtle)",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{account.type}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>
+                      {account.provider} — {account.number}
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {account.balance}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{ marginTop: 24 }}>
           <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>Quick Actions</h3>

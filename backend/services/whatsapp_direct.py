@@ -1,153 +1,205 @@
-"""WhatsApp messaging via WAHA (self-hosted) with pywhatkit fallback.
+"""WhatsApp messaging via WAHA (self-hosted) with pywhatkit and Twilio fallbacks."""
 
-WAHA (WhatsApp HTTP API): Docker container exposing REST API.
-  Run: docker run -it -p 3001:3000/e WHATSAPP_DEFAULT_ENGINE=WEBJS devlikeapro/waha
-  Scan QR: http://localhost:3001/dashboard
-  Docs: https://waha.devlike.pro/docs
+import re
 
-Fallback: pywhatkit (opens Chrome, sends via WhatsApp Web)
-"""
 import httpx
-from typing import Optional
 
-WAHA_BASE = "http://localhost:3001"
-WAHA_SESSION = "default"
+from config import settings
 
 
-async def _waha_available() -> bool:
-    """Check if WAHA Docker container is running."""
+def _waha_headers() -> dict[str, str]:
+    headers = {"Content-Type": "application/json"}
+    if settings.waha_api_key:
+        headers["X-Api-Key"] = settings.waha_api_key
+    return headers
+
+
+def _normalize_phone(value: str) -> str:
+    cleaned = (value or "").strip()
+    cleaned = cleaned.replace("whatsapp:", "").replace("@c.us", "")
+    cleaned = re.sub(r"[^\d]", "", cleaned)
+    return cleaned
+
+
+def resolve_recipient(to: str | None = None) -> str:
+    raw = to or settings.whatsapp_default_to or settings.twilio_whatsapp_to
+    phone = _normalize_phone(raw)
+    if not phone:
+        raise ValueError(
+            "No WhatsApp recipient configured. Set WHATSAPP_DEFAULT_TO or pass a 'to' value."
+        )
+    return phone
+
+
+async def _waha_probe() -> dict:
+    """Check if the WAHA container is reachable and whether auth is satisfied."""
     try:
-        async with httpx.AsyncClient(timeout=3) as client:
-            resp = await client.get(f"{WAHA_BASE}/api/sessions")
-            return resp.status_code == 200
-    except Exception:
-        return False
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(
+                f"{settings.waha_base_url}/api/sessions",
+                headers=_waha_headers(),
+            )
+    except Exception as exc:
+        return {"available": False, "status": "offline", "detail": str(exc)}
+
+    if resp.status_code == 200:
+        return {"available": True, "status": "ready"}
+    if resp.status_code == 401:
+        return {
+            "available": False,
+            "status": "auth_required",
+            "detail": (
+                "WAHA is reachable but requires X-Api-Key authentication. "
+                "Set WAHA_API_KEY in backend/.env to match your Docker container."
+            ),
+        }
+
+    return {
+        "available": False,
+        "status": "unexpected_response",
+        "detail": resp.text[:300],
+    }
 
 
 async def send_message_waha(to: str, text: str) -> dict:
-    """Send WhatsApp message via WAHA REST API.
-
-    Args:
-        to: Phone number with country code (e.g. '919876543210')
-        text: Message body
-    """
+    """Send WhatsApp message via WAHA REST API."""
     payload = {
-        "session": WAHA_SESSION,
+        "session": settings.waha_session,
         "chatId": f"{to}@c.us",
         "text": text,
     }
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{WAHA_BASE}/api/sendText",
+                f"{settings.waha_base_url}/api/sendText",
+                headers=_waha_headers(),
                 json=payload,
             )
-            if resp.status_code == 200 or resp.status_code == 201:
-                return {"status": "sent", "method": "waha", "response": resp.json()}
-            else:
-                return {"status": "failed", "method": "waha", "detail": resp.text[:300]}
-    except Exception as e:
-        return {"status": "error", "method": "waha", "detail": str(e)}
+    except Exception as exc:
+        return {"status": "error", "method": "waha", "detail": str(exc)}
+
+    if resp.status_code in (200, 201):
+        return {"status": "sent", "method": "waha", "response": resp.json()}
+    if resp.status_code == 401:
+        return {
+            "status": "auth_required",
+            "method": "waha",
+            "detail": (
+                "WAHA rejected the request with 401 Unauthorized. "
+                "Add WAHA_API_KEY in backend/.env with the same key configured on the container."
+            ),
+        }
+
+    return {"status": "failed", "method": "waha", "detail": resp.text[:300]}
 
 
 def send_message_pywhatkit(to: str, text: str) -> dict:
-    """Send WhatsApp message via pywhatkit (browser automation fallback).
-
-    Opens Chrome/WhatsApp Web and sends the message.
-    Requires: pip install pywhatkit
-    """
+    """Send WhatsApp message via pywhatkit browser automation."""
     try:
         import pywhatkit
-        # pywhatkit needs +country_code format
+
         phone = to if to.startswith("+") else f"+{to}"
-        # Send instantly (wait_time=10s for WhatsApp Web to load, close_time=3s)
         pywhatkit.sendwhatmsg_instantly(phone, text, wait_time=10, tab_close=True, close_time=3)
         return {"status": "sent", "method": "pywhatkit"}
     except ImportError:
-        return {"status": "error", "method": "pywhatkit", "detail": "pywhatkit not installed. pip install pywhatkit"}
-    except Exception as e:
-        return {"status": "error", "method": "pywhatkit", "detail": str(e)}
+        return {
+            "status": "error",
+            "method": "pywhatkit",
+            "detail": "pywhatkit not installed. pip install pywhatkit",
+        }
+    except Exception as exc:
+        return {"status": "error", "method": "pywhatkit", "detail": str(exc)}
 
 
 async def send_message_twilio(to: str, text: str) -> dict:
-    """Send via Twilio (original implementation, kept as fallback)."""
+    """Send via Twilio as a final fallback."""
     try:
-        from config import settings
         from twilio.rest import Client
+
         client = Client(settings.twilio_account_sid, settings.twilio_auth_token)
-        wa_to = to if to.startswith("whatsapp:") else f"whatsapp:+{to}"
-        wa_from = getattr(settings, "twilio_whatsapp_from", "placeholder")
-        message = client.messages.create(from_=wa_from, body=text, to=wa_to)
+        wa_to = f"whatsapp:+{to}"
+        message = client.messages.create(
+            from_=settings.twilio_whatsapp_from,
+            body=text,
+            to=wa_to,
+        )
         return {"status": "sent", "method": "twilio", "sid": message.sid}
-    except Exception as e:
-        return {"status": "error", "method": "twilio", "detail": str(e)}
+    except Exception as exc:
+        return {"status": "error", "method": "twilio", "detail": str(exc)}
 
 
-async def send_whatsapp(to: str, text: str) -> dict:
-    """Smart WhatsApp sender â€” tries WAHA first, then pywhatkit, then Twilio.
+async def send_whatsapp(to: str | None, text: str) -> dict:
+    """Try WAHA first, then pywhatkit, then Twilio."""
+    phone = resolve_recipient(to)
 
-    Args:
-        to: Phone number (e.g. '919876543210' or '+919876543210')
-        text: Message text
-    """
-    # Normalize phone
-    phone = to.replace("+", "").replace(" ", "").replace("-", "")
-    if phone.startswith("whatsapp:"):
-        phone = phone.replace("whatsapp:", "").replace("+", "")
-
-    # Try WAHA (Docker) first
-    if await _waha_available():
+    waha_status = await _waha_probe()
+    if waha_status["available"]:
         result = await send_message_waha(phone, text)
         if result["status"] == "sent":
             return result
+    else:
+        result = {
+            "status": waha_status["status"],
+            "method": "waha",
+            "detail": waha_status.get("detail", ""),
+        }
 
-    # Try pywhatkit (browser)
-    result = send_message_pywhatkit(phone, text)
-    if result["status"] == "sent":
-        return result
+    pywhatkit_result = send_message_pywhatkit(phone, text)
+    if pywhatkit_result["status"] == "sent":
+        return pywhatkit_result
 
-    # Last resort: Twilio
-    return await send_message_twilio(phone, text)
+    twilio_result = await send_message_twilio(phone, text)
+    if twilio_result["status"] == "sent":
+        return twilio_result
+
+    return {
+        "status": "failed",
+        "phone": phone,
+        "attempts": [result, pywhatkit_result, twilio_result],
+    }
 
 
 async def get_waha_qr() -> dict:
-    """Get QR code from WAHA for scanning (first-time setup)."""
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(f"{WAHA_BASE}/api/screenshot?session={WAHA_SESSION}")
-            if resp.status_code == 200:
-                return {
-                    "status": "qr_available",
-                    "dashboard_url": f"{WAHA_BASE}/dashboard",
-                    "hint": f"Open {WAHA_BASE}/dashboard in browser to scan QR code",
-                }
-            return {"status": "no_qr", "detail": "Session may already be authenticated"}
-    except Exception as e:
+    """Return a dashboard hint or explain why the QR cannot be fetched."""
+    probe = await _waha_probe()
+    if probe["status"] == "auth_required":
+        return {
+            "status": "auth_required",
+            "dashboard_url": f"{settings.waha_base_url}/dashboard",
+            "detail": probe["detail"],
+        }
+    if not probe["available"]:
         return {
             "status": "waha_not_running",
-            "detail": str(e),
-            "hint": "Run: docker run -it -p 3001:3000 -e WHATSAPP_DEFAULT_ENGINE=WEBJS devlikeapro/waha",
+            "detail": probe.get("detail", ""),
+            "hint": (
+                "Run: docker run -it -p 3001:3000 "
+                "-e WHATSAPP_DEFAULT_ENGINE=WEBJS "
+                "devlikeapro/waha"
+            ),
         }
+
+    return {
+        "status": "dashboard_available",
+        "dashboard_url": f"{settings.waha_base_url}/dashboard",
+        "hint": f"Open {settings.waha_base_url}/dashboard and scan the QR for session '{settings.waha_session}'.",
+    }
 
 
 async def get_messaging_status() -> dict:
     """Check which WhatsApp methods are available."""
-    waha_ok = await _waha_available()
+    probe = await _waha_probe()
     try:
-        import pywhatkit
+        import pywhatkit  # noqa: F401
+
         pywhatkit_ok = True
     except ImportError:
         pywhatkit_ok = False
 
-    twilio_ok = False
-    try:
-        from config import settings
-        twilio_ok = settings.twilio_account_sid not in ("placeholder", "")
-    except Exception:
-        pass
+    twilio_ok = settings.twilio_account_sid not in ("placeholder", "")
 
     methods = []
-    if waha_ok:
+    if probe["available"]:
         methods.append("waha")
     if pywhatkit_ok:
         methods.append("pywhatkit")
@@ -157,7 +209,12 @@ async def get_messaging_status() -> dict:
     return {
         "available_methods": methods,
         "primary": methods[0] if methods else "none",
-        "waha_running": waha_ok,
+        "waha_running": probe["status"] != "offline",
+        "waha_status": probe["status"],
+        "waha_detail": probe.get("detail"),
+        "waha_base_url": settings.waha_base_url,
+        "waha_session": settings.waha_session,
         "pywhatkit_installed": pywhatkit_ok,
         "twilio_configured": twilio_ok,
+        "default_recipient": _normalize_phone(settings.whatsapp_default_to or settings.twilio_whatsapp_to),
     }

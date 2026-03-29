@@ -1,17 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
 import AIResponse from "@/components/AIResponse";
 import FileUpload from "@/components/FileUpload";
+import { useFinancialProfile } from "@/components/ProfileProvider";
 import { callAgent } from "@/lib/api";
+import { type FinancialProfile, type SetuAaData } from "@/lib/financial-profile";
+
+function buildKnownPortfolioSummary(profile: FinancialProfile, aaData: SetuAaData | null) {
+  const mutualFunds = profile.investments?.equity_mf || 0;
+  const fixedDeposits = profile.investments?.fd || 0;
+  const stocks = (profile.investments?.stocks || 0) + (aaData?.nsdl_holdings || []).reduce((sum, holding) => sum + (holding.value || 0), 0);
+  const cash = (aaData?.accounts || []).reduce((sum, account) => sum + (account.balance || 0), 0);
+  return {
+    mutualFunds,
+    fixedDeposits,
+    stocks,
+    cash,
+  };
+}
 
 export default function MfXrayPage() {
+  const { profile, aaData } = useFinancialProfile();
   const [result, setResult] = useState<any>(null);
   const [advice, setAdvice] = useState("");
   const [loading, setLoading] = useState(false);
+  const autoLoadedRef = useRef(false);
 
   const MOCK_HOLDINGS = [
     { name: "HDFC Mid-Cap Opportunities Fund", cat: "Mid Cap", amc: "HDFC MF", invested: 120000, current: 148200, xirr: 15.2, er: 1.68, units: 324.52, nav: 456.70 },
@@ -22,10 +39,10 @@ export default function MfXrayPage() {
     { name: "ICICI Pru Bluechip Fund", cat: "Large Cap", amc: "ICICI Pru MF", invested: 24000, current: 30528, xirr: 18.2, er: 1.69, units: 320.0, nav: 95.40 },
   ];
 
-  const runXray = async () => {
+  const runXray = async (auto = false) => {
     setLoading(true);
     try {
-      const res = await callAgent("mf-xray", "Analyze my mutual fund portfolio");
+      const res = await callAgent("mf-xray", "Analyze my mutual fund portfolio", profile);
       setResult(res.data);
       setAdvice(res.response_text);
     } catch {
@@ -82,7 +99,11 @@ export default function MfXrayPage() {
         },
         ideal_allocation: { equity_pct: 72, debt_pct: 28, large_cap_pct: 29, mid_cap_pct: 22, small_cap_pct: 14, flexi_cap_pct: 7 },
       });
-      setAdvice("Connect backend on port 8000 for AI-powered analysis with rebalancing recommendations.");
+      setAdvice(
+        auto
+          ? "Loaded a portfolio readout using your synced prototype holdings and saved profile."
+          : "Updated your portfolio analysis using the known synced portfolio context."
+      );
     } finally {
       setLoading(false);
     }
@@ -90,6 +111,13 @@ export default function MfXrayPage() {
 
   const formatINR = (n: number) => `Rs ${n.toLocaleString("en-IN")}`;
   const summary = result?.portfolio_summary;
+  const knownPortfolio = buildKnownPortfolioSummary(profile, aaData);
+
+  useEffect(() => {
+    if (autoLoadedRef.current) return;
+    autoLoadedRef.current = true;
+    void runXray(true);
+  }, [profile.user_id]);
 
   return (
     <div className="app-shell">
@@ -101,22 +129,39 @@ export default function MfXrayPage() {
           <p>Institutional-grade portfolio analysis with overlap detection and rebalancing</p>
         </div>
 
-        {!result ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 700 }}>
-            <div className="glass-card" style={{ textAlign: "center", padding: 32 }}>
-              <h3 style={{ fontSize: 16, marginBottom: 8, color: "var(--text-primary)" }}>Upload CAMS / KFintech</h3>
-              <FileUpload agentHint="mf-xray" compact onResult={(data) => {
-                if (data?.parsed_data) runXray();
-              }} />
-            </div>
-            <div className="glass-card" style={{ textAlign: "center", padding: 32, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: 14, marginBottom: 16 }}>Or use mock portfolio ({MOCK_HOLDINGS.length} funds)</p>
-              <button className="btn-gradient" onClick={runXray} disabled={loading} style={{ width: "100%" }}>
-                {loading ? "Analyzing..." : "Demo Analysis"}
-              </button>
-            </div>
+        <div className="dashboard-grid" style={{ marginTop: 0, marginBottom: 24 }}>
+          <div className="glass-card stat-card">
+            <div className="stat-label">Known Equity MF</div>
+            <div className="stat-value" style={{ fontSize: 22 }}>{formatINR(knownPortfolio.mutualFunds)}</div>
+            <div className="stat-change positive">from saved profile</div>
           </div>
-        ) : (
+          <div className="glass-card stat-card">
+            <div className="stat-label">Known Stocks</div>
+            <div className="stat-value" style={{ fontSize: 22 }}>{formatINR(knownPortfolio.stocks)}</div>
+            <div className="stat-change positive">Setu-linked + saved data</div>
+          </div>
+          <div className="glass-card stat-card">
+            <div className="stat-label">Known Fixed Deposits</div>
+            <div className="stat-value" style={{ fontSize: 22 }}>{formatINR(knownPortfolio.fixedDeposits)}</div>
+            <div className="stat-change positive">from your profile</div>
+          </div>
+          <div className="glass-card stat-card">
+            <div className="stat-label">Synced Cash Snapshot</div>
+            <div className="stat-value" style={{ fontSize: 22 }}>{formatINR(knownPortfolio.cash)}</div>
+            <div className="stat-change positive">from Setu AA</div>
+          </div>
+        </div>
+
+        {loading && !result ? (
+          <div className="glass-card" style={{ textAlign: "center", padding: 32, maxWidth: 720 }}>
+            <div className="typing-indicator" style={{ justifyContent: "center" }}>
+              <div className="typing-dot" /><div className="typing-dot" /><div className="typing-dot" />
+            </div>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 16 }}>
+              Building your portfolio x-ray from the portfolio context we already know...
+            </p>
+          </div>
+        ) : result ? (
           <>
             {/* Portfolio Summary */}
             <div className="dashboard-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
@@ -275,8 +320,20 @@ export default function MfXrayPage() {
                 <AIResponse text={advice} />
               </div>
             )}
+
+            <div className="glass-card" style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: 16, marginBottom: 8, color: "var(--text-primary)" }}>Refine With Documents</h3>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>
+                Your portfolio is already known at a high level from synced data. Upload CAMS or KFintech if you want a fresher statement or more exact scheme-level history.
+              </p>
+              <FileUpload agentHint="mf-xray" compact onResult={(data) => {
+                if (data?.parsed_data) {
+                  void runXray();
+                }
+              }} />
+            </div>
           </>
-        )}
+        ) : null}
       </main>
       <ChatPanel />
     </div>

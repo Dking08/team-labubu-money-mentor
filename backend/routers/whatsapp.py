@@ -59,13 +59,11 @@ async def whatsapp_webhook(request: Request):
 @router.post("/send")
 async def send_message(req: SendRequest):
     """Send a WhatsApp message using the best available method."""
-    to = req.to or "919876543210"
-    return await send_whatsapp(to, req.body)
+    return await send_whatsapp(req.to, req.body)
 
 
 @router.post("/send-summary")
 async def send_summary(req: SummaryRequest):
     """Send a meeting/chat summary via WhatsApp."""
     body = f"*ET Money Mentor — Summary*\n\n{req.summary}\n\n_Reply with any question for instant advice._"
-    to = req.to or "919876543210"
-    return await send_whatsapp(to, body)
+    return await send_whatsapp(req.to, body)

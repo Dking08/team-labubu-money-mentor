@@ -16,40 +16,41 @@ router = APIRouter()
 class AgentRequest(BaseModel):
     query: str = ""
     user_id: str = "demo_user"
+    user_data: Optional[dict] = None
 
 
 @router.post("/fire")
 async def fire_planner(req: AgentRequest):
-    user = get_mock_user()
+    user = req.user_data or get_mock_user()
     return await run_fire_planner(user, req.query or "Create my FIRE plan")
 
 
 @router.post("/health-score")
 async def health_score(req: AgentRequest):
-    user = get_mock_user()
+    user = req.user_data or get_mock_user()
     return await run_money_health(user, req.query or "Assess my financial health")
 
 
 @router.post("/tax-wizard")
 async def tax_wizard(req: AgentRequest):
-    user = get_mock_user()
+    user = req.user_data or get_mock_user()
     return await run_tax_wizard(user, req.query or "Optimize my taxes")
 
 
 @router.post("/life-event")
 async def life_event(req: AgentRequest):
-    user = get_mock_user()
+    user = req.user_data or get_mock_user()
     return await run_life_event(user, req.query or "I got a ₹2 lakh bonus")
 
 
 @router.post("/mf-xray")
 async def mf_xray(req: AgentRequest):
-    user = get_mock_user()
+    user = req.user_data or get_mock_user()
     cams = get_mock_cams()
     return await run_mf_xray(user, req.query or "Analyze my mutual fund portfolio", cams)
 
 
 @router.post("/couple-planner")
 async def couple_planner(req: AgentRequest):
-    user = get_mock_user()
+    user = req.user_data or get_mock_user()
     return await run_couple_planner(user, req.query or "Plan finances with my partner")

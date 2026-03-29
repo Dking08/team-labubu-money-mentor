@@ -6,7 +6,6 @@ import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
 import Link from "next/link";
 
-// Animated number component
 function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) {
   const [display, setDisplay] = useState(0);
   useEffect(() => {
@@ -24,7 +23,6 @@ function AnimatedNumber({ value, prefix = "", suffix = "" }: { value: number; pr
   return <>{prefix}{display.toLocaleString("en-IN")}{suffix}</>;
 }
 
-// Score Ring SVG
 function ScoreRing({ score }: { score: number }) {
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
@@ -57,7 +55,6 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-// Mock data
 const USER_DATA = {
   name: "Rahul Sharma",
   netWorth: 950000,
@@ -74,12 +71,12 @@ const USER_DATA = {
 };
 
 const QUICK_ACTIONS = [
-  { icon: "🎙️", label: "Start AI Meeting", href: "/mentor" },
-  { icon: "🔥", label: "FIRE Calculator", href: "/fire-planner" },
-  { icon: "💯", label: "Health Check", href: "/health-score" },
-  { icon: "🧾", label: "Tax Optimizer", href: "/tax-wizard" },
-  { icon: "📊", label: "MF X-Ray", href: "/mf-xray" },
-  { icon: "💍", label: "Life Event Help", href: "/life-events" },
+  { label: "Start AI Meeting", href: "/mentor" },
+  { label: "FIRE Calculator", href: "/fire-planner" },
+  { label: "Health Check", href: "/health-score" },
+  { label: "Tax Optimizer", href: "/tax-wizard" },
+  { label: "MF X-Ray", href: "/mf-xray" },
+  { label: "Life Event Help", href: "/life-events" },
 ];
 
 export default function Dashboard() {
@@ -93,12 +90,11 @@ export default function Dashboard() {
           <p>AI-powered insights across your entire financial life</p>
         </div>
 
-        {/* Stats Row */}
         <div className="dashboard-grid animate-in stagger-2">
           <div className="glass-card stat-card">
             <div className="stat-label">Net Worth</div>
             <div className="stat-value"><AnimatedNumber value={USER_DATA.netWorth} prefix="₹" /></div>
-            <div className="stat-change positive">↑ 12.4% from last year</div>
+            <div className="stat-change positive">+12.4% from last year</div>
           </div>
           <div className="glass-card stat-card">
             <div className="stat-label">Monthly Income</div>
@@ -108,15 +104,14 @@ export default function Dashboard() {
           <div className="glass-card stat-card">
             <div className="stat-label">Monthly Savings</div>
             <div className="stat-value"><AnimatedNumber value={USER_DATA.monthlySavings} prefix="₹" /></div>
-            <div className="stat-change positive">₹8K EMI deducted</div>
+            <div className="stat-change positive">Rs 8K EMI deducted</div>
           </div>
         </div>
 
-        {/* Health Score + Goals */}
         <div className="dashboard-grid-wide animate-in stagger-3" style={{ marginTop: 24 }}>
           <div className="glass-card">
             <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>
-              💰 Financial Goals
+              Financial Goals
             </h3>
             {USER_DATA.goals.map((goal) => {
               const pct = Math.min(100, (goal.current / goal.target) * 100);
@@ -125,7 +120,7 @@ export default function Dashboard() {
                   <div className="goal-header">
                     <span className="goal-name">{goal.name}</span>
                     <span className="goal-amount">
-                      ₹{(goal.current / 100000).toFixed(1)}L / ₹{(goal.target / 100000).toFixed(1)}L
+                      Rs {(goal.current / 100000).toFixed(1)}L / Rs {(goal.target / 100000).toFixed(1)}L
                     </span>
                   </div>
                   <div className="goal-bar">
@@ -142,22 +137,19 @@ export default function Dashboard() {
             </h3>
             <ScoreRing score={USER_DATA.healthScore} />
             <Link href="/health-score" className="btn-gradient" style={{ marginTop: 20, fontSize: 13, padding: "8px 20px" }}>
-              View Detailed Report →
+              View Detailed Report
             </Link>
           </div>
         </div>
 
-        {/* Investment Breakdown */}
         <div className="glass-card animate-in stagger-4" style={{ marginTop: 24 }}>
           <h3 style={{ fontSize: 16, marginBottom: 20, color: "var(--text-primary)" }}>
-            📈 Investment Portfolio — ₹{(Object.values(USER_DATA.investments).reduce((a, b) => a + b, 0) / 100000).toFixed(1)}L
+            Investment Portfolio — Rs {(Object.values(USER_DATA.investments).reduce((a, b) => a + b, 0) / 100000).toFixed(1)}L
           </h3>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {Object.entries(USER_DATA.investments).map(([name, value]) => {
               const total = Object.values(USER_DATA.investments).reduce((a, b) => a + b, 0);
               const pct = ((value / total) * 100).toFixed(0);
-              const colors = ["var(--gradient-cyan)", "var(--gradient-violet)", "var(--gradient-pink)", "var(--gradient-green)", "var(--gradient-orange)", "linear-gradient(135deg, #6366f1, #818cf8)"];
-              const idx = Object.keys(USER_DATA.investments).indexOf(name);
               return (
                 <div key={name} style={{
                   flex: "1 1 150px", padding: "14px 16px",
@@ -166,7 +158,7 @@ export default function Dashboard() {
                 }}>
                   <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{name}</div>
                   <div style={{ fontFamily: "'Space Grotesk'", fontWeight: 700, fontSize: 18, color: "var(--text-primary)" }}>
-                    ₹{(value / 1000).toFixed(0)}K
+                    Rs {(value / 1000).toFixed(0)}K
                   </div>
                   <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>{pct}%</div>
                 </div>
@@ -175,13 +167,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div style={{ marginTop: 24 }}>
-          <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>⚡ Quick Actions</h3>
+          <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>Quick Actions</h3>
           <div className="quick-actions">
             {QUICK_ACTIONS.map((action) => (
               <Link key={action.href} href={action.href} className="quick-action-btn">
-                <span className="quick-action-icon">{action.icon}</span>
                 {action.label}
               </Link>
             ))}

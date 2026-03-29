@@ -4,15 +4,17 @@ import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
+import AIResponse from "@/components/AIResponse";
+import FileUpload from "@/components/FileUpload";
 import { callAgent } from "@/lib/api";
 
 const EVENTS = [
-  { icon: "💰", label: "Got a Bonus", prompt: "I got a ₹2 lakh bonus, what should I do?" },
-  { icon: "💍", label: "Getting Married", prompt: "I'm getting married next year, help me plan financially" },
-  { icon: "👶", label: "New Baby", prompt: "We're expecting a baby, what financial changes should I make?" },
-  { icon: "🏠", label: "Buying a House", prompt: "I want to buy a house worth ₹80 lakhs" },
-  { icon: "💼", label: "Job Change", prompt: "I got a new job offer at ₹22 LPA, should I switch?" },
-  { icon: "🎁", label: "Inheritance", prompt: "I received ₹15 lakh inheritance, how to invest it?" },
+  { label: "Got a Bonus", prompt: "I got a Rs 2 lakh bonus, what should I do?" },
+  { label: "Getting Married", prompt: "I am getting married next year, help me plan financially" },
+  { label: "New Baby", prompt: "We are expecting a baby, what financial changes should I make?" },
+  { label: "Buying a House", prompt: "I want to buy a house worth Rs 80 lakhs" },
+  { label: "Job Change", prompt: "I got a new job offer at Rs 22 LPA, should I switch?" },
+  { label: "Inheritance", prompt: "I received Rs 15 lakh inheritance, how to invest it?" },
 ];
 
 export default function LifeEventsPage() {
@@ -34,7 +36,7 @@ export default function LifeEventsPage() {
           "Emergency Fund Top-up": { amount: 70000, vehicle: "Liquid Fund" },
           "ELSS (Tax Saving)": { amount: 50000, vehicle: "Parag Parikh ELSS" },
           "Goal Investment": { amount: 56000, vehicle: "Flexi Cap SIP" },
-          "Fun Money 🎉": { amount: 24000, vehicle: "Enjoy!" },
+          "Discretionary": { amount: 24000, vehicle: "Personal use" },
         }},
       });
     } finally {
@@ -42,7 +44,7 @@ export default function LifeEventsPage() {
     }
   };
 
-  const formatINR = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+  const formatINR = (n: number) => `Rs ${n.toLocaleString("en-IN")}`;
 
   return (
     <div className="app-shell">
@@ -50,7 +52,7 @@ export default function LifeEventsPage() {
       <TopBar />
       <main className="main-content">
         <div className="page-header">
-          <h1>💍 Life Event Advisor</h1>
+          <h1>Life Event Advisor</h1>
           <p>AI-powered financial decisions for life&apos;s big moments</p>
         </div>
 
@@ -62,7 +64,6 @@ export default function LifeEventsPage() {
               style={selectedEvent === ev.label ? { borderColor: "rgba(6,182,212,0.5)", background: "rgba(6,182,212,0.1)" } : {}}
               onClick={() => { setSelectedEvent(ev.label); runEvent(ev.prompt); }}
             >
-              <span className="quick-action-icon">{ev.icon}</span>
               {ev.label}
             </button>
           ))}
@@ -73,7 +74,7 @@ export default function LifeEventsPage() {
             onChange={(e) => setCustomQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && customQuery && runEvent(customQuery)} />
           <button className="btn-gradient" onClick={() => customQuery && runEvent(customQuery)} disabled={loading}>
-            {loading ? "🧠" : "Ask →"}
+            {loading ? "..." : "Ask"}
           </button>
         </div>
 
@@ -88,39 +89,36 @@ export default function LifeEventsPage() {
 
         {result && !loading && (
           <>
-            {/* Allocation Breakdown */}
             {result.data?.allocation && (
               <div className="glass-card" style={{ marginBottom: 24 }}>
                 <h3 style={{ fontSize: 16, marginBottom: 16, color: "var(--text-primary)" }}>
-                  💡 Recommended Allocation — {formatINR(result.data.amount || 200000)}
+                  Recommended Allocation — {formatINR(result.data.amount || 200000)}
                 </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-                  {Object.entries(result.data.allocation).map(([key, val]: [string, any]) => {
-                    const colors = ["var(--gradient-cyan)", "var(--gradient-violet)", "var(--gradient-green)", "var(--gradient-pink)", "var(--gradient-orange)"];
-                    const idx = Object.keys(result.data.allocation).indexOf(key);
-                    return (
-                      <div key={key} style={{
-                        padding: 16, borderRadius: "var(--radius-md)",
-                        background: "var(--bg-glass-strong)", border: "1px solid var(--border-subtle)",
-                      }}>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{key}</div>
-                        <div style={{ fontFamily: "'Space Grotesk'", fontSize: 22, fontWeight: 700, color: "var(--text-primary)" }}>
-                          {formatINR(val.amount || 0)}
-                        </div>
-                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{val.vehicle}</div>
+                  {Object.entries(result.data.allocation).map(([key, val]: [string, any]) => (
+                    <div key={key} style={{
+                      padding: 16, borderRadius: "var(--radius-md)",
+                      background: "var(--bg-glass-strong)", border: "1px solid var(--border-subtle)",
+                    }}>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>{key}</div>
+                      <div style={{ fontFamily: "'Space Grotesk'", fontSize: 22, fontWeight: 700, color: "var(--text-primary)" }}>
+                        {formatINR(val.amount || 0)}
                       </div>
-                    );
-                  })}
+                      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 4 }}>{val.vehicle}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* AI Advice */}
             <div className="glass-card">
-              <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>🤖 AI Expert Advice</h3>
-              <div style={{ whiteSpace: "pre-wrap", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7 }}>
-                {result.response_text}
-              </div>
+              <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>AI Expert Advice</h3>
+              <AIResponse text={result.response_text} />
+            </div>
+
+            <div className="glass-card" style={{ marginTop: 24 }}>
+              <h3 style={{ fontSize: 16, marginBottom: 12, color: "var(--text-primary)" }}>Upload Related Documents</h3>
+              <FileUpload agentHint="life-event" compact />
             </div>
           </>
         )}

@@ -23,7 +23,6 @@ export default function MentorPage() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
 
-  // Audio level monitoring
   const monitorAudio = useCallback((stream: MediaStream) => {
     const ctx = new AudioContext();
     const source = ctx.createMediaStreamSource(stream);
@@ -57,7 +56,7 @@ export default function MentorPage() {
 
       recorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        if (blob.size < 1000) return; // too small
+        if (blob.size < 1000) return;
 
         setStatus("processing");
         try {
@@ -77,7 +76,6 @@ export default function MentorPage() {
               text: result.response.response_text,
               agentName: result.response.agent_name,
             }]);
-            // Use browser TTS
             const utterance = new SpeechSynthesisUtterance(
               result.response.response_text.slice(0, 500)
             );
@@ -96,37 +94,15 @@ export default function MentorPage() {
       setIsActive(true);
       setStatus("listening");
 
-      // Auto-stop after 8 seconds of recording
       setTimeout(() => {
         if (recorder.state === "recording") {
           recorder.stop();
-          // Restart after processing
-          setTimeout(() => {
-            if (streamRef.current && isActive) {
-              startNewRecording();
-            }
-          }, 500);
         }
       }, 8000);
     } catch (err) {
       console.error("Mic access denied:", err);
     }
-  }, [monitorAudio, isActive]);
-
-  const startNewRecording = useCallback(() => {
-    if (!streamRef.current) return;
-    const recorder = new MediaRecorder(streamRef.current, { mimeType: "audio/webm" });
-    mediaRecorderRef.current = recorder;
-    chunksRef.current = [];
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
-    };
-    recorder.onstop = mediaRecorderRef.current?.onstop || (() => {});
-    recorder.start();
-    setTimeout(() => {
-      if (recorder.state === "recording") recorder.stop();
-    }, 8000);
-  }, []);
+  }, [monitorAudio]);
 
   const stopRecording = useCallback(() => {
     setIsActive(false);
@@ -145,10 +121,17 @@ export default function MentorPage() {
       .map((t) => `${t.speaker === "user" ? "You" : "AI"}: ${t.text}`)
       .join("\n\n");
     await sendWhatsAppSummary(summary);
-    alert("Summary sent to WhatsApp! 📱");
+    alert("Summary sent to WhatsApp.");
   }, [transcript]);
 
   const orbScale = 1 + audioLevel * 0.3;
+
+  const statusLabels = {
+    idle: "Tap the orb to start your AI meeting",
+    listening: "Listening — speak naturally",
+    processing: "Processing your query...",
+    speaking: "AI Mentor is responding...",
+  };
 
   return (
     <div className="app-shell">
@@ -161,7 +144,6 @@ export default function MentorPage() {
             <p>Your personal finance mentor, powered by voice AI</p>
           </div>
 
-          {/* Voice Orb */}
           <div className="voice-orb-container">
             <div className="voice-orb-ring" />
             <div className="voice-orb-ring" />
@@ -173,42 +155,45 @@ export default function MentorPage() {
               id="voice-orb"
             >
               <span className="voice-orb-icon">
-                {status === "idle" ? "🎙️" : status === "listening" ? "👂" : status === "processing" ? "🧠" : "🔊"}
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {status === "idle" || status === "listening" ? (
+                    <><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></>
+                  ) : status === "processing" ? (
+                    <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>
+                  ) : (
+                    <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></>
+                  )}
+                </svg>
               </span>
             </div>
           </div>
 
           <div className={`voice-status ${status}`} id="voice-status">
-            {status === "idle" && "Tap the orb to start your AI meeting"}
-            {status === "listening" && "Listening... speak naturally"}
-            {status === "processing" && "Processing your query..."}
-            {status === "speaking" && "AI Mentor is responding..."}
+            {statusLabels[status]}
           </div>
 
-          {/* Action Buttons */}
           <div style={{ display: "flex", gap: 12 }}>
             {isActive && (
               <button className="btn-ghost" onClick={stopRecording} style={{ color: "#f87171" }}>
-                ⬛ End Meeting
+                End Meeting
               </button>
             )}
             {transcript.length > 0 && (
               <button className="btn-gradient" onClick={handleWhatsAppSummary}>
-                📱 Send to WhatsApp
+                Send to WhatsApp
               </button>
             )}
           </div>
 
-          {/* Transcript */}
           {transcript.length > 0 && (
             <div className="glass-card transcript-panel" id="transcript-panel">
               <h3 style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 12 }}>
-                📝 Live Transcript
+                Live Transcript
               </h3>
               {transcript.map((entry) => (
                 <div className="transcript-item" key={entry.id}>
                   <div className={`transcript-speaker ${entry.speaker}`}>
-                    {entry.speaker === "user" ? "👤 You" : `🤖 ${entry.agentName || "AI Mentor"}`}
+                    {entry.speaker === "user" ? "You" : (entry.agentName || "AI Mentor")}
                   </div>
                   <div className="transcript-text">{entry.text}</div>
                 </div>

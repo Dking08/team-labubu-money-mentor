@@ -54,7 +54,7 @@ function StatRow({ items }: { items: any[] }) {
 
 function AllocationChart({ data, title }: { data: Record<string, number>; title?: string }) {
   const total = Object.values(data).reduce((a, b) => a + b, 0);
-  const colors = ["#06b6d4", "#8b5cf6", "#ec4899", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
+  const colors = ["#f59e0b", "#3b82f6", "#ef4444", "#10b981", "#a855f7", "#f97316", "#6366f1", "#14b8a6"];
   return (
     <div className="ui-allocation">
       {title && <div className="ui-allocation-title">{title}</div>}
@@ -142,7 +142,7 @@ function TimelineBlock({ items, title }: { items: any[]; title?: string }) {
 
 function AlertBlock({ title, description, variant }: { title: string; description: string; variant: string }) {
   const colors: Record<string, string> = {
-    info: "#06b6d4",
+    info: "#3b82f6",
     success: "#10b981",
     warning: "#f59e0b",
     danger: "#ef4444",

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { chatWithMentor } from "@/lib/api";
+import { useFinancialProfile } from "./ProfileProvider";
+import { getFirstName } from "@/lib/financial-profile";
 import AIResponse from "./AIResponse";
 
 interface Message {
@@ -25,12 +27,14 @@ const AGENT_LABELS: Record<string, string> = {
 };
 
 export default function ChatPanel() {
+  const { profile } = useFinancialProfile();
+  const firstName = getFirstName(profile);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "ai",
-      text: "Hello Rahul. I am your ET Money Mentor. Ask me anything about your finances — taxes, investments, goals, or how to allocate that bonus.",
+      text: `Hello ${firstName}. I am your ET Money Mentor. Ask me anything about your finances — taxes, investments, goals, or how to allocate that bonus.`,
       agentName: "mentor",
     },
   ]);
@@ -41,6 +45,18 @@ export default function ChatPanel() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    setMessages((prev) => {
+      if (!prev.length || prev[0].id !== "welcome") return prev;
+      const next = [...prev];
+      next[0] = {
+        ...next[0],
+        text: `Hello ${firstName}. I am your ET Money Mentor. Ask me anything about your finances — taxes, investments, goals, or how to allocate that bonus.`,
+      };
+      return next;
+    });
+  }, [firstName]);
 
   const sendMessage = useCallback(async () => {
     if (!input.trim() || isLoading) return;
@@ -54,7 +70,7 @@ export default function ChatPanel() {
     setIsLoading(true);
 
     try {
-      const result = await chatWithMentor(input.trim());
+      const result = await chatWithMentor(input.trim(), profile.user_id, profile);
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "ai",
@@ -77,7 +93,7 @@ export default function ChatPanel() {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading]);
+  }, [input, isLoading, profile]);
 
   return (
     <>

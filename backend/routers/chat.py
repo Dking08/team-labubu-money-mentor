@@ -11,6 +11,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     message: str
     user_id: str = "demo_user"
+    user_data: Optional[dict] = None
 
 
 class ChatResponse(BaseModel):
@@ -26,7 +27,7 @@ class ChatResponse(BaseModel):
 async def chat(req: ChatRequest):
     """Process a chat message through the multi-agent orchestrator."""
     try:
-        user_data = get_mock_user()
+        user_data = req.user_data or get_mock_user()
         result = await process_message(
             user_id=req.user_id,
             message=req.message,

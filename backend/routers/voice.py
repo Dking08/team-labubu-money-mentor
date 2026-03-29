@@ -1,13 +1,20 @@
 """Voice endpoint — receives audio, transcribes with Groq Whisper, processes, returns."""
-from fastapi import APIRouter, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, UploadFile, File, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import Response
+from pydantic import BaseModel
 from config import settings
 from agents.orchestrator import process_message
 from data.mock_data import get_mock_user
+from services.tts import synthesize_speech
 import httpx
 import json
 import base64
 
 router = APIRouter()
+
+
+class TTSRequest(BaseModel):
+    text: str
 
 
 async def transcribe_audio(audio_bytes: bytes, filename: str = "audio.webm") -> str:
@@ -50,6 +57,31 @@ async def voice_process(file: UploadFile = File(...)):
         "transcript": transcript,
         "response": result,
     }
+
+
+@router.get("/tts/status")
+async def tts_status():
+    return {
+        "provider": "elevenlabs" if settings.elevenlabs_api_key else "browser_fallback",
+        "configured": bool(settings.elevenlabs_api_key),
+        "voice_id": settings.elevenlabs_voice_id,
+        "model_id": settings.elevenlabs_model_id,
+    }
+
+
+@router.post("/tts")
+async def voice_tts(req: TTSRequest):
+    """Convert text to speech using the configured TTS provider."""
+    try:
+        audio_bytes, content_type = await synthesize_speech(req.text)
+        return Response(content=audio_bytes, media_type=content_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except httpx.HTTPStatusError as exc:
+        detail = exc.response.text[:300] if exc.response is not None else str(exc)
+        raise HTTPException(status_code=502, detail=f"TTS provider error: {detail}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"TTS failed: {exc}")
 
 
 @router.websocket("/ws")

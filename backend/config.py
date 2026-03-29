@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     # â”€â”€ Google AI (Gemini) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     google_api_key: str = "placeholder"
 
+    # â”€â”€ Text To Speech â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    elevenlabs_api_key: str = ""
+    elevenlabs_voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
+    elevenlabs_model_id: str = "eleven_multilingual_v2"
+
     # â”€â”€ Supabase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     supabase_url: str = "https://placeholder.supabase.co"
     supabase_key: str = "placeholder"
@@ -19,8 +24,14 @@ class Settings(BaseSettings):
     # â”€â”€ Twilio (WhatsApp) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     twilio_account_sid: str = "placeholder"
     twilio_auth_token: str = "placeholder"
-    # twilio_whatsapp_from: str = "placeholder"
-    # twilio_whatsapp_to: str = "whatsapp:+911234567890"
+    twilio_whatsapp_from: str = "placeholder"
+    twilio_whatsapp_to: str = ""
+
+    # â”€â”€ WAHA (WhatsApp HTTP API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    waha_base_url: str = "http://localhost:3001"
+    waha_session: str = "default"
+    waha_api_key: str = ""
+    whatsapp_default_to: str = ""
 
     # â”€â”€ Setu Account Aggregator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     setu_client_id: str = "7ae0553f-f10f-475d-88ea-4a5f94ff3723"

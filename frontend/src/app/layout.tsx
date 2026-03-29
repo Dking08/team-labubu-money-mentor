@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ProfileProvider } from "@/components/ProfileProvider";
 
 export const metadata: Metadata = {
   title: "AI Money Mentor — Your Personal Finance Copilot",
@@ -14,7 +15,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ProfileProvider>{children}</ProfileProvider>
+      </body>
     </html>
   );
 }

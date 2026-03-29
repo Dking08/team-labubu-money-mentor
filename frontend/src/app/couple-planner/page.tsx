@@ -6,13 +6,19 @@ import TopBar from "@/components/TopBar";
 import ChatPanel from "@/components/ChatPanel";
 import AIResponse from "@/components/AIResponse";
 import FileUpload from "@/components/FileUpload";
+import { useFinancialProfile } from "@/components/ProfileProvider";
 import { callAgent } from "@/lib/api";
 
 export default function CouplePlannerPage() {
+  const { profile } = useFinancialProfile();
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const partner1 = { name: "Rahul", income: 1500000, investments: 1250000 };
+  const partner1 = {
+    name: profile.name,
+    income: profile.annual_income,
+    investments: profile.cash_balance + Object.values(profile.investments).reduce((sum, value) => sum + value, 0),
+  };
   const partner2 = { name: "Priya", income: 1200000, investments: 450000 };
   const combined = partner1.income + partner2.income;
   const combinedInv = partner1.investments + partner2.investments;
@@ -20,7 +26,7 @@ export default function CouplePlannerPage() {
   const runPlan = async () => {
     setLoading(true);
     try {
-      const res = await callAgent("couple-planner", "Joint financial plan for me and my partner");
+      const res = await callAgent("couple-planner", "Joint financial plan for me and my partner", profile);
       setResult(res);
     } catch {
       setResult({

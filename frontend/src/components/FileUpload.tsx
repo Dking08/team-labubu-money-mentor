@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { uploadFile } from "@/lib/api";
 
 interface FileUploadProps {
@@ -9,12 +9,37 @@ interface FileUploadProps {
   compact?: boolean;
 }
 
+interface UploadHistoryItem {
+  filename: string;
+  agent: string;
+  suggestedAgent?: string;
+  uploadedAt: string;
+}
+
+const UPLOAD_HISTORY_KEY = "et-money-mentor.upload-history";
+
 export default function FileUpload({ agentHint, onResult, compact }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<UploadHistoryItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(UPLOAD_HISTORY_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as UploadHistoryItem[];
+      const filtered = agentHint
+        ? parsed.filter((item) => item.agent === agentHint).slice(0, 3)
+        : parsed.slice(0, 3);
+      setHistory(filtered);
+    } catch {
+      setHistory([]);
+    }
+  }, [agentHint]);
 
   const handleFile = useCallback(async (file: File) => {
     setUploading(true);
@@ -23,6 +48,19 @@ export default function FileUpload({ agentHint, onResult, compact }: FileUploadP
     try {
       const data = await uploadFile(file, agentHint);
       setResult(data);
+      if (typeof window !== "undefined") {
+        const nextEntry: UploadHistoryItem = {
+          filename: data?.filename || file.name,
+          agent: agentHint || "general",
+          suggestedAgent: data?.suggested_agent,
+          uploadedAt: new Date().toISOString(),
+        };
+        const raw = window.localStorage.getItem(UPLOAD_HISTORY_KEY);
+        const existing = raw ? (JSON.parse(raw) as UploadHistoryItem[]) : [];
+        const next = [nextEntry, ...existing.filter((item) => !(item.filename === nextEntry.filename && item.agent === nextEntry.agent))].slice(0, 12);
+        window.localStorage.setItem(UPLOAD_HISTORY_KEY, JSON.stringify(next));
+        setHistory(next.filter((item) => !agentHint || item.agent === agentHint).slice(0, 3));
+      }
       onResult?.(data);
     } catch (e: any) {
       setError(e.message || "Upload failed");
@@ -47,6 +85,24 @@ export default function FileUpload({ agentHint, onResult, compact }: FileUploadP
 
   return (
     <div className={`file-upload ${compact ? "compact" : ""}`}>
+      {history.length > 0 && (
+        <div style={{ marginBottom: 12, padding: compact ? "10px 12px" : "14px 16px", borderRadius: "var(--radius-md)", background: "var(--bg-glass-strong)", border: "1px solid var(--border-subtle)" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-accent)", marginBottom: 8 }}>
+            Recent Parsed Documents
+          </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {history.map((item) => (
+              <div key={`${item.agent}-${item.filename}-${item.uploadedAt}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12 }}>
+                <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>{item.filename}</div>
+                <div style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                  {new Date(item.uploadedAt).toLocaleDateString("en-IN")}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div
         className={`file-upload-zone ${isDragging ? "dragging" : ""} ${uploading ? "uploading" : ""}`}
         onDrop={onDrop}

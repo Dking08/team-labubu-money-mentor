@@ -1,20 +1,26 @@
+import type { FinancialProfile, SetuAaData } from "./financial-profile";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export async function chatWithMentor(message: string, userId = "demo_user") {
+export async function chatWithMentor(
+  message: string,
+  userId = "demo_user",
+  userData?: FinancialProfile
+) {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, user_id: userId }),
+    body: JSON.stringify({ message, user_id: userId, user_data: userData }),
   });
   if (!res.ok) throw new Error("Chat request failed");
   return res.json();
 }
 
-export async function callAgent(agent: string, query = "") {
+export async function callAgent(agent: string, query = "", userData?: FinancialProfile) {
   const res = await fetch(`${API_BASE}/api/agents/${agent}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, user_data: userData }),
   });
   if (!res.ok) throw new Error("Agent request failed");
   return res.json();
@@ -23,6 +29,12 @@ export async function callAgent(agent: string, query = "") {
 export async function getUserProfile() {
   const res = await fetch(`${API_BASE}/api/user/profile`);
   if (!res.ok) throw new Error("Failed to fetch profile");
+  return res.json();
+}
+
+export async function getSetuMockData(): Promise<SetuAaData> {
+  const res = await fetch(`${API_BASE}/api/aa/mock-data`);
+  if (!res.ok) throw new Error("Failed to fetch Setu data");
   return res.json();
 }
 
@@ -37,11 +49,30 @@ export async function transcribeAudio(audioBlob: Blob) {
   return res.json();
 }
 
+export async function synthesizeMeetingSpeech(text: string) {
+  const res = await fetch(`${API_BASE}/api/voice/tts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) throw new Error("TTS request failed");
+  return res.blob();
+}
+
 export async function sendWhatsAppSummary(summary: string) {
   const res = await fetch(`${API_BASE}/api/whatsapp/send-summary`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ summary }),
+  });
+  return res.json();
+}
+
+export async function sendWhatsAppMessage(body: string, to?: string) {
+  const res = await fetch(`${API_BASE}/api/whatsapp/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ body, to }),
   });
   return res.json();
 }

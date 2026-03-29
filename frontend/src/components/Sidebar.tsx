@@ -5,6 +5,7 @@ import Link from "next/link";
 
 const NAV_ITEMS = [
   { section: "Overview", items: [
+    { label: "Onboarding", href: "/onboarding" },
     { label: "Dashboard", href: "/" },
     { label: "AI Mentor Meeting", href: "/mentor" },
   ]},
